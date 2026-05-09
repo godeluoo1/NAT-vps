@@ -479,3 +479,88 @@ esac
 
 
 
+cat > /tmp/run-komari-agent.sh <<'EOF'
+#!/bin/sh
+
+# ====== 你只需要改这里 ======
+ENDPOINT="http://35.212.253.152:25774"
+TOKEN="1MHJkR4waj7LtYBDdPd8D6"
+MONTH_ROTATE="1"
+# ===========================
+
+INSTALL_DIR="/opt/komari"
+AGENT_BIN="$INSTALL_DIR/agent"
+LOG_FILE="/tmp/komari.log"
+PID_FILE="/tmp/komari.pid"
+
+echo "===== Stop old Komari Agent ====="
+pkill -9 -f "/opt/komari/agent" 2>/dev/null || true
+pkill -9 -f "komari-agent" 2>/dev/null || true
+sleep 1
+
+echo "===== Clean old files ====="
+rm -rf "$INSTALL_DIR"
+rm -f "$LOG_FILE" "$PID_FILE"
+
+echo "===== Prepare directory ====="
+mkdir -p "$INSTALL_DIR"
+
+echo "===== Detect architecture ====="
+ARCH="$(uname -m)"
+case "$ARCH" in
+  x86_64|amd64)
+    DOWNLOAD_URL="https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64"
+    ;;
+  aarch64|arm64)
+    DOWNLOAD_URL="https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-arm64"
+    ;;
+  armv7l|armv7)
+    DOWNLOAD_URL="https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-armv7"
+    ;;
+  *)
+    echo "Unsupported architecture: $ARCH"
+    exit 1
+    ;;
+esac
+
+echo "Architecture: $ARCH"
+echo "Download URL: $DOWNLOAD_URL"
+
+echo "===== Download Komari Agent ====="
+if command -v wget >/dev/null 2>&1; then
+  wget -O "$AGENT_BIN" "$DOWNLOAD_URL"
+elif command -v curl >/dev/null 2>&1; then
+  curl -L -o "$AGENT_BIN" "$DOWNLOAD_URL"
+else
+  echo "Error: wget or curl is required"
+  exit 1
+fi
+
+chmod +x "$AGENT_BIN"
+
+echo "===== Start Komari Agent ====="
+nohup "$AGENT_BIN" -e "$ENDPOINT" -t "$TOKEN" --month-rotate "$MONTH_ROTATE" >> "$LOG_FILE" 2>&1 &
+
+echo $! > "$PID_FILE"
+
+sleep 5
+
+echo "===== PID ====="
+cat "$PID_FILE"
+
+echo "===== Process ====="
+ps aux | grep -i "$AGENT_BIN" | grep -v grep || true
+
+echo "===== Log ====="
+tail -n 100 "$LOG_FILE"
+
+echo "===== Done ====="
+EOF
+
+chmod +x /tmp/run-komari-agent.sh
+sh /tmp/run-komari-agent.sh
+
+
+
+
+
