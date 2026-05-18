@@ -32,7 +32,7 @@ echo "blacklist virtio_balloon" > /etc/modprobe.d/balloon.conf
 bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/argox/main/argox.sh) -c
 bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sing-box/main/sing-box.sh) -c
 bash <(curl -sL kejilion.sh)
-ssh-keygen -t ed25519 -f ~/.ssh/boxd_key -N "" -q && ssh -o StrictHostKeyChecking=no -i ~/.ssh/boxd_key godeluoo@boxd.sh
+ssh -i 公钥.pub godeluoo@boxd.sh
 
 
 
